@@ -4,7 +4,8 @@
       "Bash(git fetch:*)",
       "Bash(ls:*)",
       "Bash(pwsh:*)",
-      "Bash(powershell.exe -File .specify/scripts/powershell/create-new-feature.ps1 -Json -Number 1 -ShortName \"financial-tracker-mvp\" -Description \"Personal financial tracking application MVP with transaction logging, category management, and dashboard visualizations\")"
+      "Bash(powershell.exe -File .specify/scripts/powershell/create-new-feature.ps1 -Json -Number 1 -ShortName \"financial-tracker-mvp\" -Description \"Personal financial tracking application MVP with transaction logging, category management, and dashboard visualizations\")",
+      "Bash(powershell.exe -File .specify/scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly)"
     ]
   }
 }

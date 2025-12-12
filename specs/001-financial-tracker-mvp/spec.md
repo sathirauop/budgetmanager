@@ -5,6 +5,16 @@
 **Status**: Draft
 **Input**: User description: "Personal financial tracking application with transaction logging, category management, and dashboard visualizations in LKR currency"
 
+## Clarifications
+
+### Session 2025-12-12
+
+- Q: Data persistence strategy - which storage approach should be used? → A: Server-side database with PostgreSQL
+- Q: API error handling strategy - how should the application handle API failures? → A: Retry with user notification
+- Q: User authentication requirement - should the application require login? → A: Email/password auth
+- Q: Decimal rounding behavior - should amounts with 3+ decimals be rounded or rejected? → A: Round to 2 decimal places
+- Q: Session timeout duration - how long before automatic logout after inactivity? → A: 30 minutes
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Record Daily Transactions (Priority: P1)
@@ -72,61 +82,97 @@ A user wants to see a comprehensive overview of their monthly finances including
 ### Edge Cases
 
 - What happens when a user tries to enter a negative amount? (System should prevent negative amounts; expense/income type toggle handles the sign)
-- What happens when a user tries to enter an amount with more than 2 decimal places? (System should round to 2 decimal places or reject input)
+- What happens when a user tries to enter an amount with more than 2 decimal places? (System automatically rounds to 2 decimal places using banker's rounding - e.g., 500.125 becomes 500.12, 500.135 becomes 500.14)
 - What happens when there are no transactions for a selected month? (Dashboard should show Rs. 0.00 for all totals, empty charts with "No data" message, and empty history list)
 - What happens when a user enters a transaction with a future date? (System should allow it, as users may want to plan ahead)
 - What happens when a category name is extremely long? (System should truncate or enforce character limit, e.g., 50 characters)
 - What happens when a user has only income or only expenses for a month? (Balance calculation should still work; charts show only available data)
 - How does the system handle very old transactions? (Month picker should allow scrolling back to any month where transactions exist)
 - What happens when viewing the dashboard on a small mobile screen? (Responsive design ensures charts and cards stack vertically and remain readable)
+- What happens when the API is temporarily unavailable? (System retries 2-3 times automatically, then shows error notification with manual retry option)
+- What happens when a user loses internet connection during transaction entry? (Form data preserved, automatic retry attempts, then error message with retry button)
+- What happens when the database connection fails during a save operation? (Backend returns error, frontend retries automatically, user sees error notification if all retries fail)
+- What happens when a user tries to register with an already-used email? (System shows error: "Email already registered. Please login or use a different email.")
+- What happens when a user enters incorrect login credentials? (System shows error: "Invalid email or password" without revealing which field is wrong for security)
+- What happens when a user forgets their password? (User clicks "Forgot Password", enters email, receives password reset link via email)
+- What happens when a user session expires after 30 minutes of inactivity? (System detects expired session, shows login prompt, preserves unsaved form data if possible)
+- What happens when a user tries to use a weak password during registration? (System rejects and shows: "Password must be at least 8 characters")
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST allow users to enter transaction amounts in Sri Lankan Rupees (LKR) with up to 2 decimal places
-- **FR-002**: System MUST provide a date picker allowing users to select any date for a transaction (past, present, or future)
-- **FR-003**: System MUST allow users to enter a text description for each transaction (minimum 1 character, maximum 200 characters)
-- **FR-004**: System MUST provide a toggle or button mechanism to switch between "Income" and "Expense" transaction types
-- **FR-005**: System MUST provide a category selection mechanism with default categories appropriate to transaction type
-- **FR-006**: System MUST allow users to create new categories instantly by typing a new name during transaction entry
-- **FR-007**: System MUST filter category suggestions based on transaction type (expense categories for expenses, income categories for income)
-- **FR-008**: System MUST allow users to edit any previously entered transaction, modifying amount, date, description, category, or type
-- **FR-009**: System MUST allow users to delete any transaction permanently
-- **FR-010**: System MUST persist all transactions and categories across sessions
-- **FR-011**: System MUST calculate and display total income for the selected month
-- **FR-012**: System MUST calculate and display total expenses for the selected month
-- **FR-013**: System MUST calculate and display balance (income minus expenses) for the selected month
-- **FR-014**: System MUST display balance in green when positive and red when negative
-- **FR-015**: System MUST generate an expense pie chart showing proportional spending across all expense categories for the selected month
-- **FR-016**: System MUST generate an income pie or donut chart showing proportional income across all income categories for the selected month
-- **FR-017**: System MUST display a scrollable list of all transactions for the selected month, showing date, category, and formatted amount
-- **FR-018**: System MUST format all currency amounts as "Rs. X,XXX.XX" with proper thousands separators and 2 decimal places
-- **FR-019**: System MUST provide a month picker dropdown allowing users to switch between different months
-- **FR-020**: System MUST update all dashboard elements (summary cards, charts, history) when the selected month changes
-- **FR-021**: System MUST be responsive and optimized for mobile phones, allowing quick data entry on small screens
-- **FR-022**: System MUST load and display dashboard data within 2 seconds on standard mobile connections
+#### Authentication & User Management
+
+- **FR-001**: System MUST provide user registration with email and password
+- **FR-002**: System MUST validate email format and require unique email addresses
+- **FR-003**: System MUST enforce password strength requirements (minimum 8 characters)
+- **FR-004**: System MUST provide user login with email and password credentials
+- **FR-005**: System MUST provide password recovery functionality via email
+- **FR-006**: System MUST maintain secure user sessions with automatic logout after 30 minutes of inactivity
+- **FR-007**: System MUST isolate each user's transaction and category data (users cannot see other users' data)
+- **FR-008**: System MUST hash and securely store passwords (never store plaintext passwords)
+
+#### Transaction Management
+
+- **FR-009**: System MUST allow users to enter transaction amounts in Sri Lankan Rupees (LKR) with up to 2 decimal places; amounts with more than 2 decimals are automatically rounded using banker's rounding (round half to even)
+- **FR-010**: System MUST provide a date picker allowing users to select any date for a transaction (past, present, or future)
+- **FR-011**: System MUST allow users to enter a text description for each transaction (minimum 1 character, maximum 200 characters)
+- **FR-012**: System MUST provide a toggle or button mechanism to switch between "Income" and "Expense" transaction types
+- **FR-013**: System MUST provide a category selection mechanism with default categories appropriate to transaction type
+- **FR-014**: System MUST allow users to create new categories instantly by typing a new name during transaction entry
+- **FR-015**: System MUST filter category suggestions based on transaction type (expense categories for expenses, income categories for income)
+- **FR-016**: System MUST allow users to edit any previously entered transaction, modifying amount, date, description, category, or type
+- **FR-017**: System MUST allow users to delete any transaction permanently
+- **FR-018**: System MUST persist all transactions and categories across sessions
+
+#### Dashboard & Visualization
+
+- **FR-019**: System MUST calculate and display total income for the selected month
+- **FR-020**: System MUST calculate and display total expenses for the selected month
+- **FR-021**: System MUST calculate and display balance (income minus expenses) for the selected month
+- **FR-022**: System MUST display balance in green when positive and red when negative
+- **FR-023**: System MUST generate an expense pie chart showing proportional spending across all expense categories for the selected month
+- **FR-024**: System MUST generate an income pie or donut chart showing proportional income across all income categories for the selected month
+- **FR-025**: System MUST display a scrollable list of all transactions for the selected month, showing date, category, and formatted amount
+- **FR-026**: System MUST format all currency amounts as "Rs. X,XXX.XX" with proper thousands separators and 2 decimal places
+- **FR-027**: System MUST provide a month picker dropdown allowing users to switch between different months
+- **FR-028**: System MUST update all dashboard elements (summary cards, charts, history) when the selected month changes
+
+#### Technical & Performance
+
+- **FR-029**: System MUST be responsive and optimized for mobile phones, allowing quick data entry on small screens
+- **FR-030**: System MUST load and display dashboard data within 2 seconds on standard mobile connections
+- **FR-031**: System MUST provide a RESTful API for transaction CRUD operations (create, read, update, delete)
+- **FR-032**: System MUST provide a RESTful API for category management operations
+- **FR-033**: System MUST provide a RESTful API for user authentication operations (register, login, logout, password recovery)
+- **FR-034**: System MUST store all user, transaction, and category data in PostgreSQL database with proper schema and constraints
+- **FR-035**: System MUST automatically retry failed API requests 2-3 times with exponential backoff before showing error to user
+- **FR-036**: System MUST display clear error notifications when API requests fail after retries, with option for user to manually retry
+- **FR-037**: System MUST show loading indicators during API operations to provide user feedback
 
 ### Key Entities
 
-- **Transaction**: Represents a single financial transaction with attributes: unique identifier, amount (LKR), date, description, category reference, type (income/expense), timestamp of creation
-- **Category**: Represents a transaction category with attributes: unique identifier, name, type association (income/expense/both), is_default flag (true for system defaults, false for user-created)
-- **Monthly Summary**: Calculated aggregate for a specific month containing: month/year identifier, total income, total expenses, balance, transaction count
+- **User**: Represents an authenticated user with attributes: unique identifier, email (unique), hashed password, registration timestamp, last login timestamp
+- **Transaction**: Represents a single financial transaction with attributes: unique identifier, user reference (owner), amount (LKR), date, description, category reference, type (income/expense), timestamp of creation
+- **Category**: Represents a transaction category with attributes: unique identifier, user reference (null for system defaults), name, type association (income/expense/both), is_default flag (true for system defaults, false for user-created)
+- **Monthly Summary**: Calculated aggregate for a specific user and month containing: user reference, month/year identifier, total income, total expenses, balance, transaction count
 
 ### Assumptions
 
-1. **Single User**: MVP assumes single-user usage (no multi-user accounts or authentication required)
-2. **Currency**: All amounts are in Sri Lankan Rupees (LKR); no multi-currency support in MVP
-3. **Data Storage**: Transactions and categories persist locally (browser storage acceptable for MVP)
-4. **Time Zone**: All dates use user's local time zone
-5. **Default Categories**: System provides sensible default categories:
+1. **Multi-User**: Application supports multiple users with email/password authentication; each user's data is isolated and private
+2. **Session Management**: User sessions automatically expire after 30 minutes of inactivity for security; users must re-authenticate after expiration
+3. **Currency**: All amounts are in Sri Lankan Rupees (LKR); no multi-currency support in MVP
+4. **Data Storage**: Transactions and categories persist in a PostgreSQL database via backend API with user-scoped data isolation
+5. **Time Zone**: All dates use user's local time zone
+6. **Default Categories**: System provides sensible default categories:
    - Expense: Food, Transport, Rent, Utilities, Entertainment, Healthcare, Shopping, Mobile Data
    - Income: Salary, Freelancing, Investment Returns, Business Income, Other Income
-6. **Chart Library**: Any standard web-compatible charting solution acceptable (implementation detail)
-7. **Mobile-First**: Design prioritizes mobile experience as users often log expenses on the go
-8. **Data Retention**: All transaction data persists indefinitely unless user explicitly deletes
-9. **Validation**: Amount field validates for positive numbers with up to 2 decimal places
-10. **Date Range**: System supports transactions from 2000-01-01 to 2099-12-31 (100-year range)
+7. **Chart Library**: Any standard web-compatible charting solution acceptable (implementation detail)
+8. **Mobile-First**: Design prioritizes mobile experience as users often log expenses on the go
+9. **Data Retention**: All transaction data persists indefinitely unless user explicitly deletes
+10. **Validation**: Amount field validates for positive numbers; amounts with more than 2 decimal places are automatically rounded using banker's rounding (round half to even)
+11. **Date Range**: System supports transactions from 2000-01-01 to 2099-12-31 (100-year range)
 
 ## Success Criteria *(mandatory)*
 
