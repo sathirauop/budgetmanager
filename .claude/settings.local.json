@@ -6,7 +6,8 @@
       "Bash(pwsh:*)",
       "Bash(powershell.exe -File .specify/scripts/powershell/create-new-feature.ps1 -Json -Number 1 -ShortName \"financial-tracker-mvp\" -Description \"Personal financial tracking application MVP with transaction logging, category management, and dashboard visualizations\")",
       "Bash(powershell.exe -File .specify/scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly)",
-      "Bash(powershell.exe -File .specify/scripts/powershell/setup-plan.ps1 -Json)"
+      "Bash(powershell.exe -File .specify/scripts/powershell/setup-plan.ps1 -Json)",
+      "Bash(powershell.exe -File .specify/scripts/powershell/update-agent-context.ps1 -AgentType claude)"
     ]
   }
 }
